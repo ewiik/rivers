@@ -6,6 +6,7 @@
 */~$*
 
 dat-orig/
+private/
 
 *.Rproj.user
 *.Rproj
