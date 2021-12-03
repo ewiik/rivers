@@ -1,0 +1,12 @@
+.Rhistory
+.directory
+
+*~
+.~lock*
+*/~$*
+
+dat-orig/
+
+*.Rproj.user
+*.Rproj
+.Rproj.user
