@@ -21,9 +21,9 @@ nlist <- function(...) { # retain names of objects supplied to a list
 ## not reading in SPAs; they are designated for birds and are also sssis
 ## NOTE: ramsar could be more interesting but they are also sssis so leaving for now
 
-sac <- readOGR('../dat-orig/lle/NRW_SAC', layer='NRW_SACPolygon')
-sssi <- readOGR('../dat-orig/lle/NRW_SSSI', layer='NRW_SSSIPolygon')
-nnr <- readOGR('../dat-orig/lle/NRW_NNR', layer='NRW_NNRPolygon')
+sac <- readOGR('../dat-orig/lle/NRW_SAC', layer='NRW_SACPolygon') # also sssis; no ISIS ID overlap with NNR
+sssi <- readOGR('../dat-orig/lle/NRW_SSSI', layer='NRW_SSSIPolygon') # no ID other than SSSI-specific
+nnr <- readOGR('../dat-orig/lle/NRW_NNR', layer='NRW_NNRPolygon') # also sssis; no ISIS ID overlap with SAC
 lnr <- readOGR('../dat-orig/lle/NRW_LNR', layer='NRW_LNRPolygon')
 
 wfd <- readOGR('../dat-orig/lle/NRW_WFD_RIVERS_C2', layer='NRW_WFD_RIVERS_C2Line')
@@ -37,6 +37,9 @@ wfd <- readOGR('../dat-orig/lle/NRW_WFD_RIVERS_C2', layer='NRW_WFD_RIVERS_C2Line
 ##    of those are the same as overall_as...!!! using overall_as for now
 sacp <- readOGR('../dat-orig/lle/NRW_SAC_PHOSPHORUS_COMPLIANCE_2017_19', 
                 layer='NRW_SAC_PHOSPHORUS_COMPLIANCE_2017_19Polygon')
+## hmmmmm why everything else duplicated apart from site_numbe for GB111067057080.... makes joining with other
+##    data bad later on.... 
+
 
 ## =========================================
 ## Subset data to what we want
@@ -82,23 +85,43 @@ colnames(sacp@data)[1] <- "OBJECTID"
 wfdat <- as.data.frame(wfd@data)
 sacdat <- as.data.frame(sacp@data)
 
+protnames <- c("LNR", "NNR","SAC","SSSI","WFD","SACP")
 prot <- nlist(lnr, nnr, sac, sssi, wfd, sacp)
 #prot <- nlist(lnr, nnr, sac)
 prot <- lapply(prot, spTransform, CRS("+init=epsg:4326"))
 prot <- lapply(prot, function(x) {x$Name <- x@data[,grep("name", tolower(colnames(x@data)))[1]]; return(x)})
 prot <- Map(function(x,y) {x$ID <- x@data[,y]; return(x)}, prot, idcols)
+prot <- Map(function(x,y) {x$Designation <- y; return(x)}, prot, protnames)
 prot <- lapply(prot, function(x) {ifelse(length(grep(paste(statuscols, collapse="|"), colnames(x@data)))>0,
                                          x$Status <- x@data[,which(names(x@data) %in% statuscols)],
                                          x$Status <- NA);return(x)})
-prot <- lapply(prot, function(x) {x@data <- x@data[,c("OBJECTID","Name","ID","Status")]; return(x)})
+prot <- lapply(prot, function(x) {x@data <- x@data[,c("OBJECTID","Name","Designation","ID","Status")]; return(x)})
 
 ## return them to the workspace
 list2env(prot, globalenv())
 
+## now, since almost everything is also sssi and there aren't keys provided to link these up across
+##    designations, and the data sets are huge, I'll remove duplication by clipping out all SSSIs
+##    covered by my other subsetting, leaving only the SSSIs that are only SSSIs and nothing else
+megaprot <- gUnion(nnr, sac, checkValidity=22)
+sssileft <- gDifference(sssi, megaprot, byid=T, checkValidity = 22)
+sssileft <- sssi - megaprot # takes a long time but retains data frame info
+
+# get the correct data frame entries for the sssis we have left
+ids <- NULL
+for(i in 1: length(sssileft)) {ids[i] <- sssileft@polygons[[i]]@ID} # correspond to rownames of sssi
+ids <- gsub( " .*$", "", ids ) # drop the concatenated "1" which is the id of megaprot
+
+want <- sssi@data[rownames(sssi@data) %in% ids,]
+sssileft <- SpatialPolygonsDataFrame(sssileft, want, match.ID = F)
+
 ## put polygons together - note that wfd is spatiallines so need to leave alone
-prot <- rbind(lnr, nnr, sac, sssi, sacp, makeUniqueIDs=T )
+prot <- rbind(lnr, nnr, sac, sssileft, makeUniqueIDs=T )
 
 ## save objects
 saveRDS(prot, "./shiny-ignore/Data/protsites-spatial.rds")
+saveRDS(wfd, "./shiny-ignore/Data/wfdwaters-spatial.rds")
+saveRDS(sacp, "./shiny-ignore/Data/sac-P-spatial.rds")
+
 saveRDS(sacdat, "./shiny-ignore/Data/sac-P.rds")
 saveRDS(wfdat, "./shiny-ignore/Data/wfd-statuses-cycle2.rds")
