@@ -127,23 +127,6 @@ sssileft <- sf::st_as_sf(sssileft)
 ## put polygons together - note that wfd is spatiallines so need to leave alone
 prot <- rbind(lnr, nnr, sac, sssileft )
 
-
-protpal <- colorFactor('BrBG', levels(prot$Designation))
-
-leaflet() %>% 
-  addTiles() %>%
-  setView(lng = -4.129263, lat =  53.227390 , zoom = 10) %>%
-  addProviderTiles(providers$OpenTopoMap, options=providerTileOptions(minZoom=11)) %>% 
-  addPolygons(data=prot, fill=~protpal(Designation), color=~protpal(Designation), weight=2,
-              fillOpacity = .7, opacity=.9, label=prot$Name, smoothFactor = 5,
-              highlightOptions = highlightOptions(bringToFront = T, color="blue", 
-                                                  weight=4),
-              group='Protected sites') %>%
-  addLegend("bottomleft", pal = protpal, values=prot$Designation, # https://github.com/rstudio/leaflet/issues/485
-            title = "Designation",group='WFD rivers',
-            #labFormat = labelFormat(prefix = "$"),
-            opacity = 0.8) 
-
 ## save objects
 saveRDS(prot, "./shiny-ignore/Data/protsites-spatial.rds")
 saveRDS(wfd, "./shiny-ignore/Data/wfdwaters-spatial.rds")
