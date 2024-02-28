@@ -1,5 +1,5 @@
 ## lle data on consented discharges, which includes non numeric permits (see EIR) 2024
-##    storm overflows from rivers trust 
+##    storm overflows from rivers trust ## FIXME not in here yet
 ##    and 'all assets' from dwr cymru possibly 2022
 
 ## libraries
@@ -16,11 +16,13 @@ perms <- read.csv("../dat-orig/lle/consented_discharges/nrw_water_quality_permit
                     stringsAsFactors = F)
 # metadata which is pretty unhelpful is here https://datamap.gov.wales/layers/geonode:nrw_water_quality_permits
 
-asscoords <- read.csv("~/static/activism/rivers/data-EIR/assetdatawyeusk-locations.csv", stringsAsFactors = F)
-assmeta <- read.csv("~/static/activism/rivers/data-EIR/assetdatawyeusk.csv", stringsAsFactors = F)
-assflows <- read.csv("~/static/activism/rivers/data-EIR/assetdatawyeusk-flow.csv", stringsAsFactors = F)
+asscoords <- read.csv("../dat-orig/eir/dwrcymru/assetdatawyeusk-locations.csv", stringsAsFactors = F)
+assmeta <- read.csv("../dat-orig/eir/dwrcymru/assetdatawyeusk.csv", stringsAsFactors = F)
+assflows <- read.csv("../dat-orig/eir/dwrcymru/assetdatawyeusk-flow.csv", stringsAsFactors = F)
 sac <- st_read("../dat-orig/lle/NRW_WFD_MGT_CATCHMENTS_C2/NRW_WFD_MGT_CATCHMENTS_C2Polygon.shp")
 # need the above to be able to tell wye and usk apart in the data set
+
+
 
 ## function
 listN <- function(...){ # function that automagically creates named list using objects provided
@@ -147,8 +149,13 @@ uskwant <- which(lengths(st_within(asscoords,uskper))>0)
 wyedat <- asscoords[wyewant,]
 uskdat <- asscoords[uskwant,]
 
+## NOTE!!! It seems sp::merge is fragile with sf objects. all.x is not so, and it deletes missings insted
+##    of filling. Fucking bastard sf.
 wyedat <- sp::merge(wyedat, assmeta[,c("Asset.ID","Sample.Frequency","Notes")])
 uskdat <- sp::merge(uskdat, assmeta[,c("Asset.ID","Sample.Frequency","Notes")])
+
+wyedat <- left_join(wyedat, assflows[,c("Asset.Number","TDV..m3.day.")], by=join_by(Asset.ID == Asset.Number))
+uskdat <- left_join(uskdat, assflows[,c("Asset.Number","TDV..m3.day.")], by=join_by(Asset.ID == Asset.Number))
 
 # remove those that are 'not sites' etc.
 datlist <- listN(wyedat, uskdat)
