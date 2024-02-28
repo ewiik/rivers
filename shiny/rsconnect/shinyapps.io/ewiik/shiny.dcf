@@ -1,0 +1,10 @@
+name: shiny
+title:
+username: ewiik
+account: ewiik
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 11356256
+bundleId: 8309139
+url: https://ewiik.shinyapps.io/shiny/
+version: 1

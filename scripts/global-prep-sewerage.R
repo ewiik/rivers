@@ -110,6 +110,11 @@ datsum <- ddply(dat, .(permit_number), summarise, ndets = length(determinand_cod
                 release=release[1])
 # table(datsum$release)
 
+## remove all annoying cols
+datwant <- c("objectid","permit_number","release","determinand_code", "determinand", 
+             "limit_1" ,"outlet_ngr","receiving_waters")
+dat <- dat[,c(datwant)]
+
 ## make into spatial
 ukgrids <- dat$outlet_ngr
 ## check that they are valid
@@ -121,6 +126,7 @@ coords <- sgo_bng_lonlat(ukgrids, to=4326)
 ## create spatial object
 datspat <- SpatialPointsDataFrame(coords =cbind(coords$x, coords$y), data = dat, 
                                   proj4string = CRS("+init=epsg:4326"))
+datspat <- st_as_sf(datspat)
 
 ## ==================================================================
 ## prep EIR dwr cymru data
