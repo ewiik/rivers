@@ -22,11 +22,11 @@ table(dat$OverallWaterBody)
 good <- dat[which(dat$Eco %in% c("Good", "High")),]
 
 ## where are key bio elements not sampled
-missing <- good[which(good$Macro_Sub_Conf == '' & good$Inverts_Conf == '' & good$Diatom_Sub_Conf ==''),]
+missing <- good[which(good$Macro_Sub_Conf == '' & good$Inverts_Conf == '' & good$Diatom_Sub_Conf =='' & good$Fish_Conf == ''),]
 uncertain <- good[which(good$Macro_Sub_Conf == 'Uncertain' & good$Inverts_Conf == 'Uncertain' & good$Diatom_Sub_Conf =='Uncertain'),]
 
 ## summarise dat a bit better in terms of the bio elements
-biowant <- c('Macro_Sub_Conf', 'Inverts_Conf','Diatom_Sub_Conf')
+biowant <- c('Macro_Sub_Conf', 'Inverts_Conf','Diatom_Sub_Conf', 'Fish_Conf')
 
 goodsum <- melt(good, id.vars = c("WBID" ,"WB.name" ), measure.vars = c(biowant))
 goodsum$value[which(goodsum$value=="")] <- "Missing"
